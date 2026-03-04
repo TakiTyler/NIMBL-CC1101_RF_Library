@@ -6,6 +6,8 @@
 #ifndef RF_LIBRARY_H_
 #define RF_LIBRARY_H_
 
+#define LED_PIN BIT0
+
 #define DUMMY 0x00
 
 #define COMMAND_STROBE_START 0x30
@@ -135,22 +137,20 @@ enum burst_command_strobes
 class rf_library
 {
 public:
-    rf_library(uint8_t address);
+    rf_library(uint8_t csn_pin);
 
     void config_SPI();
     void config_radio(); // using baud 115.2k for now w/ 2-FSK
-
-private:
-    /* data */
-    uint8_t _address;
-
     uint8_t read_single_byte(uint8_t address);
     uint8_t write_single_byte(uint8_t address, uint8_t write);
     void read_burst(uint8_t address);
     void write_burst(uint8_t address, uint8_t *data, uint8_t length);
-    void write_string(uint8_t address);
+    void write_string(uint8_t address, const char *string);
     uint8_t command_strobe(uint8_t address);
-    void read_status(uint8_t status_byte);
+
+private:
+    /* data */
+    uint8_t _csn_pin;
 };
 
 /* RF_LIBRARY_H_ */

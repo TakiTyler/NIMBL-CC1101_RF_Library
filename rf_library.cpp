@@ -71,15 +71,13 @@ const struct rf_settings cc1101_config[] =
     {RCCTRL0_STATUS, 0x00}, // Last RC Oscillator Calibration Result
 };
 
-rf_library::rf_library(uint8_t address)
+rf_library::rf_library(uint8_t csn_pin) 
 {
-    // _address = address;
+    _csn_pin = csn_pin; 
 }
 
 void rf_library::config_SPI()
 {
-    //// configuring spi communication ////
-
     UCB1CTLW0 = UCSWRST; // reset to start config
 
     // enable: master mode, synchronous mode, MSB, caputre on first edge, idle low
@@ -119,30 +117,27 @@ void rf_library::config_radio()
 
     // to change power level, write to PATABLE
     write_single_byte(PATABLE, 0xC6); // 0xC6 = default power
-
-    return;
 }
 
 uint8_t rf_library::read_single_byte(uint8_t address)
 {
-    uint8_t data_byte;
-    uint8_t status_byte;
-    uint8_t header = (READ_BIT | NO_BURST | address); // read byte;
+    uint8_t data_byte, status_byte;
+    uint8_t header = (READ_BIT | NO_BURST | address); // read 1 byte
 
-    P5OUT &= ~CSN_PIN; // pull low to start communication
-    while (P4IN & SO_PIN); // wait for SO pin to go low
+    P5OUT &= ~CSN_PIN;      // pull low to start communication
+    while (P4IN & SO_PIN);  // wait for SO pin to go low
 
     // send header information //
-    while (!(UCB1IFG & UCTXIFG));               // wait until we can transmit
-    UCB1TXBUF = header; // send header
-    while (!(UCB1IFG & UCRXIFG));                    // wait for receive byte
-    status_byte = UCB1RXBUF; // read buffer
+    while (!(UCB1IFG & UCTXIFG));   // wait until we can transmit
+    UCB1TXBUF = header;             // send header
+    while (!(UCB1IFG & UCRXIFG));   // wait for receive byte
+    status_byte = UCB1RXBUF;        // read buffer
 
     // read data //
     while (!(UCB1IFG & UCTXIFG));
-    UCB1TXBUF = DUMMY; // send dummy bytes
+    UCB1TXBUF = DUMMY;              // send dummy bytes
     while (!(UCB1IFG & UCRXIFG));
-    data_byte = UCB1RXBUF; // read data
+    data_byte = UCB1RXBUF;          // read data
 
     P5OUT |= CSN_PIN; // pull high to end communication
 
@@ -151,25 +146,23 @@ uint8_t rf_library::read_single_byte(uint8_t address)
 
 uint8_t rf_library::write_single_byte(uint8_t address, uint8_t write)
 {
-    uint8_t data_byte;
-    uint8_t status_byte;
-    uint8_t header = (WRITE_BIT | NO_BURST | address); // read byte;
+    uint8_t data_byte, status_byte;
+    uint8_t header = (WRITE_BIT | NO_BURST | address); // write 1 byte
 
-    P5OUT &= ~CSN_PIN; // pull low to start communication
-    while (P4IN & SO_PIN)
-        ; // wait for SO pin to go low
+    P5OUT &= ~CSN_PIN;      // pull low to start communication
+    while (P4IN & SO_PIN);  // wait for SO pin to go low
 
     // send header information //
-    while (!(UCB1IFG & UCTXIFG));               // wait until we can transmit
-    UCB1TXBUF = header; // send header
-    while (!(UCB1IFG & UCRXIFG));                    // wait for receive byte
-    status_byte = UCB1RXBUF; // read buffer
+    while (!(UCB1IFG & UCTXIFG));   // wait until we can transmit
+    UCB1TXBUF = header;             // send header
+    while (!(UCB1IFG & UCRXIFG));   // wait for receive byte
+    status_byte = UCB1RXBUF;        // read buffer
 
     // write data //
     while (!(UCB1IFG & UCTXIFG));
-    UCB1TXBUF = write; // send dummy bytes
+    UCB1TXBUF = write;              // send bytes to write
     while (!(UCB1IFG & UCRXIFG));
-    data_byte = UCB1RXBUF; // read data
+    data_byte = UCB1RXBUF;          // read data
 
     P5OUT |= CSN_PIN; // pull high to end communication
 
@@ -179,26 +172,25 @@ uint8_t rf_library::write_single_byte(uint8_t address, uint8_t write)
 // IF GDO0 is set to high, call this function
 void rf_library::read_burst(uint8_t address)
 {
-    uint8_t dummy;
-    uint8_t length;
-    uint8_t header = (READ_BIT | BURST | address); // read byte
+    uint8_t dummy, length;
+    uint8_t header = (READ_BIT | BURST | address); // read many bytes
 
-    P5OUT &= ~CSN_PIN; // pull low to start communication
-    while (P4IN & SO_PIN); // wait for SO pin to go low
+    P5OUT &= ~CSN_PIN;      // pull low to start communication
+    while (P4IN & SO_PIN);  // wait for SO pin to go low
 
     // send header information //
-    while (!(UCB1IFG & UCTXIFG));               // wait until we can transmit
-    UCB1TXBUF = header; // send header
-    while (!(UCB1IFG & UCRXIFG));              // wait for receive byte
-    dummy = UCB1RXBUF; // read buffer to clear flag
+    while (!(UCB1IFG & UCTXIFG));   // wait until we can transmit
+    UCB1TXBUF = header;             // send header
+    while (!(UCB1IFG & UCRXIFG));   // wait for receive byte
+    dummy = UCB1RXBUF;              // read buffer to clear flag
 
     // read length byte //
     while (!(UCB1IFG & UCTXIFG));
-    UCB1TXBUF = FIFO_ADDRESS;
+    UCB1TXBUF = FIFO_ADDRESS;       // read buffer
     while (!(UCB1IFG & UCRXIFG));
-    length = UCB1RXBUF;
+    length = UCB1RXBUF;             // get length
 
-    // read data //
+    // read length bytes of data //
     for (int i = 0; i < length; i++)
     {
         while (!(UCB1IFG & UCTXIFG));
@@ -208,25 +200,23 @@ void rf_library::read_burst(uint8_t address)
     }
 
     P5OUT |= CSN_PIN; // pull high to end communication
-
-    return;
 }
 
 void rf_library::write_burst(uint8_t address, uint8_t *data, uint8_t length)
 {
     uint8_t dummy;
-    uint8_t header = (WRITE_BIT | BURST | address); // read byte;
+    uint8_t header = (WRITE_BIT | BURST | address); // write many bytes
 
-    P5OUT &= ~CSN_PIN; // pull low to start communication
-    while (P4IN & SO_PIN); // wait for SO pin to go low
+    P5OUT &= ~CSN_PIN;      // pull low to start communication
+    while (P4IN & SO_PIN);  // wait for SO pin to go low
 
     // send header information //
-    while (!(UCB1IFG & UCTXIFG));               // wait until we can transmit
-    UCB1TXBUF = header; // send header
-    while (!(UCB1IFG & UCRXIFG));              // wait for receive byte
-    dummy = UCB1RXBUF; // read buffer to clear flag
+    while (!(UCB1IFG & UCTXIFG));   // wait until we can transmit
+    UCB1TXBUF = header;             // send header
+    while (!(UCB1IFG & UCRXIFG));   // wait for receive byte
+    dummy = UCB1RXBUF;              // read buffer to clear flag
 
-    // write data //
+    // write many bytes of data //
     for (int i = 0; i < length; i++)
     {
         while (!(UCB1IFG & UCTXIFG));
@@ -236,35 +226,32 @@ void rf_library::write_burst(uint8_t address, uint8_t *data, uint8_t length)
     }
 
     P5OUT |= CSN_PIN; // pull high to end communication
-
-    return;
 }
 
-void write_string(uint8_t address, const char *string)
+void rf_library::write_string(uint8_t address, const char *string)
 {
     uint8_t dummy;
     uint8_t header = (WRITE_BIT | BURST | address);
     uint8_t str_length = strlen(string);
 
-    if (str_length > 63)
-        return; // CC1101 can't handle 64 length
+    if (str_length > 63) return; // CC1101 can't handle 64 length
 
-    P5OUT &= ~CSN_PIN; // pull low to start communication
-    while (P4IN & SO_PIN); // wait for SO pin to go low
+    P5OUT &= ~CSN_PIN;      // pull low to start communication
+    while (P4IN & SO_PIN);  // wait for SO pin to go low
 
     // send header information //
-    while (!(UCB1IFG & UCTXIFG));               // wait until we can transmit
-    UCB1TXBUF = header; // send header
-    while (!(UCB1IFG & UCRXIFG));              // wait for receive byte
-    dummy = UCB1RXBUF; // read buffer to clear flag
+    while (!(UCB1IFG & UCTXIFG));   // wait until we can transmit
+    UCB1TXBUF = header;             // send header
+    while (!(UCB1IFG & UCRXIFG));   // wait for receive byte
+    dummy = UCB1RXBUF;              // read buffer to clear flag
 
     // write data //
     while (!(UCB1IFG & UCTXIFG));
-    UCB1TXBUF = str_length; // send dummy bytes
+    UCB1TXBUF = str_length;         // send dummy bytes
     while (!(UCB1IFG & UCRXIFG));
-    dummy = UCB1RXBUF; // read data
+    dummy = UCB1RXBUF;              // read data
 
-    // write data //
+    // write many bytes of data //
     for (int i = 0; i < str_length; i++)
     {
         while (!(UCB1IFG & UCTXIFG));
@@ -278,33 +265,72 @@ void write_string(uint8_t address, const char *string)
     command_strobe(STX); // trigger a transmit
 }
 
-uint8_t command_strobe(uint8_t address)
+// this only writes a byte, doesn't read one back
+uint8_t rf_library::command_strobe(uint8_t address)
 {
     uint8_t status_byte;
-    uint8_t header = (WRITE_BIT | NO_BURST | address); // read byte;
+    uint8_t header = (WRITE_BIT | NO_BURST | address); // write 1 byte;
 
-    P5OUT &= ~CSN_PIN; // pull low to start communication
-    while (P4IN & SO_PIN); // wait for SO pin to go low
+    P5OUT &= ~CSN_PIN;      // pull low to start communication
+    while (P4IN & SO_PIN);  // wait for SO pin to go low
 
     // send header information //
-    while (!(UCB1IFG & UCTXIFG));               // wait until we can transmit
-    UCB1TXBUF = header; // send header
-    while (!(UCB1IFG & UCRXIFG));                    // wait for receive byte
-    status_byte = UCB1RXBUF; // read buffer
+    while (!(UCB1IFG & UCTXIFG));   // wait until we can transmit
+    UCB1TXBUF = header;             // send header
+    while (!(UCB1IFG & UCRXIFG));   // wait for receive byte
+    status_byte = UCB1RXBUF;        // read buffer
 
     P5OUT |= CSN_PIN; // pull high to end communication
 
     return status_byte; // return status for writes
 }
 
-void read_status(uint8_t status_byte)
+void test_rf()
 {
-    // bit 7 = CHIP_RDYn
-    // bits 6 -> 4 indicate main state machine mode
-    // bits 3 -> 0 bytes available in RX FIFO or free bytes in TX FIFO
-}
+    // stop watchdog timer
+    WDTCTL = WDTPW | WDTHOLD;
 
-int main(void)
-{
+    // disable high-impedance mode
+    PM5CTL0 &= ~LOCKLPM5;
+
+    // led feedback
+    P1DIR |= LED_PIN;
+    P1OUT &= ~LED_PIN;
+
+    // instantiate & config
+    rf_library myRadio(CSN_PIN);
+    myRadio.config_SPI();
+
+    // send reset strob
+    myRadio.command_strobe(SRES);
+
+    //// test 1 (who am i) ////
+    uint8_t part_num = myRadio.read_single_byte(PARTNUM);
+
+    //// test 2 (read / write) ////
+    uint8_t test_val = 0x33;
+    myRadio.write_single_byte(PKTLEN, test_val);
+    uint8_t read_back = myRadio.read_single_byte(PKTLEN);
+
+    //// validation ////
+    if(part_num == 0x00 && read_back == test_val)
+    {
+        // if we have success, turn on LED
+        P1OUT |= LED_PIN;
+    }
+    else
+    {
+        // if we have an error, flash LEDs
+        volatile uint16_t counter = 65000;
+        while(1)
+        {
+            P1OUT ^= LED_PIN;
+            while(counter != 0){counter--;}
+            counter = 65000;
+        }
+    }
+
+    while(1){}
+
     return;
 }
