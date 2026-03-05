@@ -332,5 +332,4 @@ void test_rf()
 
     while(1){}
 
-    return;
 }
