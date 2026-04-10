@@ -1,0 +1,28 @@
+{
+    "cSpell.words": [
+        "AGCCTRL",
+        "AGCTEST",
+        "bitbang",
+        "CHANNR",
+        "DEVIATN",
+        "FOCCFG",
+        "FREND",
+        "FREQEST",
+        "FSCAL",
+        "FSCTRL",
+        "FSTXON",
+        "MCSM",
+        "MDMCFG",
+        "PATABLE",
+        "PKTCTRL",
+        "RCCTRL",
+        "RSSI",
+        "rxfifo",
+        "SFRX",
+        "SFTX",
+        "UCTXIFG",
+        "WORCTRL",
+        "WOREVT",
+        "WORTIME"
+    ]
+}

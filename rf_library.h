@@ -26,6 +26,11 @@
 #define SINGLE_RX_BYTE 0xBF
 #define BURST_RX_BYTE 0xFF
 
+#define SO_PIN BIT3
+#define SI_PIN BIT4
+#define SCLK_PIN BIT3
+#define CSN_PIN BIT4
+
 struct rf_settings
 {
     uint8_t address;
@@ -134,19 +139,26 @@ enum burst_command_strobes
     RX_FIFO = 0x3F
 };
 
-class rf_library
+
+class radio_module
 {
 public:
-    rf_library(uint8_t csn_pin);
+    radio_module(uint8_t csn_pin);
 
     void config_SPI();
     void config_radio(); // using baud 115.2k for now w/ 2-FSK
+    void test_rf();
+    void wait_for_radio();
     uint8_t read_single_byte(uint8_t address);
     uint8_t write_single_byte(uint8_t address, uint8_t write);
     void read_burst(uint8_t address);
     void write_burst(uint8_t address, uint8_t *data, uint8_t length);
     void write_string(uint8_t address, const char *string);
+    void transmit_packet(uint8_t *payload, uint8_t length);
+    void receive_packet(uint8_t *rx_buffer, uint8_t length);
     uint8_t command_strobe(uint8_t address);
+    uint8_t read_status_register(uint8_t address);
+    uint8_t bitbang_test();
 
 private:
     /* data */
