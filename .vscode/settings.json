@@ -4,6 +4,7 @@
         "AGCTEST",
         "bitbang",
         "CHANNR",
+        "Deassert",
         "DEVIATN",
         "FOCCFG",
         "FREND",
@@ -24,5 +25,6 @@
         "WORCTRL",
         "WOREVT",
         "WORTIME"
-    ]
+    ],
+    "C_Cpp.errorSquiggles": "disabled"
 }
