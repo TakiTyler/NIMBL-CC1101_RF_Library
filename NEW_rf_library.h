@@ -87,7 +87,7 @@ GDO2 = P1.7
 #define RXFIFO      0x3F
 #define TXFIFO      0x3F
 
-// command strobes
+// command cmdStrobes
 #define SRES        0x30  // Reset chip
 #define SCAL        0x33  // Calibrate synthesizer
 #define SRX         0x34  // Enable receive
@@ -112,8 +112,8 @@ class RF_module
 public:
     void begin();       // combination of spi init, and loading registers
     void reset();       // reset strobes
-    void sendPacket();
-    void receivePacket();
+    void sendPacket(uint8_t spo2, uint8_t heartRate);
+    void receivePacket(uint8_t &spo2, uint8_t &heartRate);
     void setIdle();
     uint8_t getStatus();
 
@@ -127,6 +127,6 @@ private:
     uint8_t readRegister(uint8_t address);
     void writeBurst(uint8_t address, uint8_t *data, uint8_t length);
     void readBurst(uint8_t address, uint8_t *data, uint8_t length);
-    uint8_t strobe(uint8_t cmd);
+    uint8_t cmdStrobe(uint8_t cmd);
     static void delayMicroseconds(uint16_t us);
 }

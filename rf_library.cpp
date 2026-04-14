@@ -82,9 +82,8 @@ radio_module::radio_module(uint8_t csn_pin)
 
 void radio_module::config_SPI()
 {
-    UCB1CTLW0 = UCSWRST; // reset to start config
-
-    SYSCFG3 |= USCIB1RMP; // change the SPI to the one we care about
+    UCB1CTLW0 = UCSWRST;    // reset to start config
+    SYSCFG3 |= USCIB1RMP;   // change the SPI to the one we care about
 
     // enable: master mode, synchronous mode, MSB, caputre on first edge, idle low
     UCB1CTLW0 |= (UCMST | UCSYNC | UCMSB | UCCKPH | UCSSEL__SMCLK);
@@ -403,60 +402,6 @@ uint8_t radio_module::command_strobe(uint8_t address)
 
     return status_byte; // return status for writes
 }
-
-// uint8_t radio_module::bitbang_test()
-// {
-//     uint8_t read_val = 0x00;
-
-//     // 1. Force pins to raw GPIO (Disconnect from SPI hardware)
-//     P5SEL0 &= ~SCLK_PIN; P5SEL1 &= ~SCLK_PIN; P5DIR |= SCLK_PIN; // SCLK Output
-//     P4SEL0 &= ~SI_PIN;   P4SEL1 &= ~SI_PIN;   P4DIR |= SI_PIN;   // SI Output
-//     P4SEL0 &= ~SO_PIN;   P4SEL1 &= ~SO_PIN;   P4DIR &= ~SO_PIN;  // SO Input
-//     P5DIR |= _csn_pin;
-
-//     // 2. Initial Idle States
-//     P5OUT &= ~SCLK_PIN; // Clock low
-//     P5OUT |= _csn_pin;  // CSN high
-//     P4OUT &= ~SI_PIN;   // MOSI low
-//     // __delay_cycles(100);
-
-//     // 3. Start Transaction
-//     P5OUT &= ~_csn_pin; // CSN Low
-//     while(P4IN & SO_PIN); // Wait for radio to pull MISO low
-
-//     // 4. Send 0xB0 (Read PARTNUM Burst) -> Binary: 10110000
-//     uint8_t header = 0xB0;
-//     for(int i = 7; i >= 0; i--)
-//     {
-//         // Set MOSI high or low based on the current bit
-//         if(header & (1 << i)) P4OUT |= SI_PIN;
-//         else P4OUT &= ~SI_PIN;
-
-//         // Pulse Clock
-//         P5OUT |= SCLK_PIN; // Clock High
-//         // __delay_cycles(10);
-//         P5OUT &= ~SCLK_PIN; // Clock Low
-//         // __delay_cycles(10);
-//     }
-
-//     // 5. Read 8 bits from CC1101
-//     for(int i = 7; i >= 0; i--)
-//     {
-//         P5OUT |= SCLK_PIN; // Clock High
-//         // __delay_cycles(10);
-
-//         // Read MISO pin
-//         if(P4IN & SO_PIN) read_val |= (1 << i);
-
-//         P5OUT &= ~SCLK_PIN; // Clock Low
-//         // __delay_cycles(10);
-//     }
-
-//     // 6. End Transaction
-//     P5OUT |= _csn_pin; // CSN High
-
-//     return read_val;
-// }
 
 void radio_module::test_rf()
 {

@@ -1,0 +1,42 @@
+// TRANSMIT TEST MAIN //
+void transmit_main(void)
+{
+    WDTCTL = WDTPW | WDTHOLD; // Stop watchdog timer
+    PM5CTL0 &= ~LOCKLPM5; // disable GPIO
+
+    // for radio
+    P4REN |= BIT3; // Enable resistor on P4.3 (SO)
+    P4OUT |= BIT3; // Set it to Pull-UP
+
+    P3DIR |= (LED_1 | LED_2 | LED_3);
+    P4DIR |= LED_4;
+    P5DIR |= LED_5;
+
+    P3OUT &= ~(LED_1 | LED_2 | LED_3);
+    P4OUT &= ~LED_4;
+    P5OUT &= ~LED_5;
+
+    init_i2c();
+    LCD_init();
+
+    P3OUT |= LED_1; // init done
+
+    radio_module radio(CSN_PIN);
+    radio.config_SPI();
+    radio.config_radio();
+
+    P3OUT |= LED_2; // success creating radio module
+
+    uint8_t sensor_data_packet[2] = {0x12, 0x34}; // storage for our data
+
+    P3OUT |= LED_3; // begin loop
+
+    while(1)
+    {
+        P5OUT ^= LED_5;
+        display_three_digits(OXYGEN, sensor_data_packet[1]);
+        display_three_digits(HEART_RATE, sensor_data_packet[0]);
+        radio.transmit_packet(sensor_data_packet, 2);
+        delay_ms(1000);
+    }
+}

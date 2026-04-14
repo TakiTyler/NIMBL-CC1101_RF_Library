@@ -1,0 +1,65 @@
+// BASE STATION MAIN //
+void base_station_main()
+{
+    WDTCTL = WDTPW | WDTHOLD; // Stop watchdog timer
+    PM5CTL0 &= ~LOCKLPM5; // disable GPIO
+
+    // for radio
+    P4REN |= BIT3; // Enable resistor on P4.3 (SO)
+    P4OUT |= BIT3;  // Set it to Pull-UP
+
+    // turn P1.0 & P5.1 into an LED output, for debugging
+    P1DIR |= BIT0;
+    P5DIR |= BIT1;
+
+    P1OUT &= ~BIT0;
+    P5OUT &= ~BIT1;
+
+    uint8_t rx_buffer[4] = {0};
+    uint8_t packet_length = 4; // 2 extra bytes due to CRC
+
+    uint8_t rxfifo_data, status1, status2, buffer_length = 0;
+
+    LCD_init();
+
+    radio_module radio(CSN_PIN);
+    radio.config_SPI();
+    radio.config_radio();
+
+    radio.command_strobe(SIDLE);  // set to idle (just in case)
+    radio.command_strobe(SFRX);   // always flush the fifo before a receive
+    radio.command_strobe(SRX);    // start receiving data
+
+    while(1)
+    {
+        rxfifo_data = radio.read_status_register(RXBYTES); // checks to see how many bytes are in RX FIFO
+
+        if(rxfifo_data & 0x80){
+            P5OUT ^= BIT1;
+            radio.command_strobe(SIDLE);  // set to idle (just in case)
+            radio.command_strobe(SFRX);   // always flush the fifo before a receive
+            radio.command_strobe(SRX);
+            continue;
+        }
+
+        if(rxfifo_data >= (packet_length + 2)){
+            for(int i = 0; i < packet_length; i++){
+                rx_buffer[i] = radio.read_single_byte(RX_FIFO);
+            }
+
+            status1 = radio.read_single_byte(RX_FIFO);
+            status2 = radio.read_single_byte(RX_FIFO);
+
+            // crc passed
+            if (status2 & 0x80){
+                P1OUT ^= BIT0;
+                display_three_digits(HEART_RATE, rx_buffer[0]);
+                display_three_digits(OXYGEN, rx_buffer[1]);
+            }
+
+            radio.command_strobe(SIDLE);
+            radio.command_strobe(SFRX);
+            radio.command_strobe(SRX);
+        }
+    }
+}
