@@ -119,6 +119,7 @@ public:
 
 private:
     void spiInit();
+    void loadConfigRegisters();
     uint8_t spiTransfer(uint8_t byte);
     void csAssert();
     void csDeassert();
@@ -127,4 +128,5 @@ private:
     void writeBurst(uint8_t address, uint8_t *data, uint8_t length);
     void readBurst(uint8_t address, uint8_t *data, uint8_t length);
     uint8_t strobe(uint8_t cmd);
+    static void delayMicroseconds(uint16_t us);
 }
