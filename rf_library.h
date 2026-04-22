@@ -1,169 +1,142 @@
-#include "msp430.h"
+/*
+
+This is a re-do of the rf_library.cpp
+
+//// PIN ASSIGNMENTS ////
+
+CSN  = P5.4
+MOSI = P4.4
+MISO = P4.3
+SCLK = P5.3
+GDO0 = P1.0
+GDO2 = P1.7
+
+*/
+
+#ifndef _RF_MODULE_LIBRARY_H_
+#define _RF_MODULE_LIBRARY_H_
+
+#include <msp430.h>
+#include <msp430fr2476.h>
 #include <stdint.h>
-#include <stddef.h>
-#include <string.h>
 
-#ifndef RF_LIBRARY_H_
-#define RF_LIBRARY_H_
-
-#define LED_PIN BIT0
-
-#define DUMMY 0x00
-
-#define COMMAND_STROBE_START 0x30
-#define COMMAND_STROBE_END 0x3D
-
-#define FIFO_ADDRESS 0x3F
-
-#define WRITE_BIT 0x00
-#define READ_BIT 0x80
-
-#define NO_BURST 0x00
-#define BURST 0x40
-
-#define SINGLE_TX_BYTE 0x3F
-#define BURST_TX_BYTE 0x7F
-#define SINGLE_RX_BYTE 0xBF
-#define BURST_RX_BYTE 0xFF
-
-#define SO_PIN BIT3
-#define SI_PIN BIT4
-#define SCLK_PIN BIT3
+#define CSN_DIR P5DIR
+#define CSN_OUT P5OUT
 #define CSN_PIN BIT4
 
-struct rf_settings
-{
-    uint8_t address;
-    uint8_t value;
-};
+#define MISO_IN P4IN
+#define MISO_PIN BIT3
+#define MOSI_PIN BIT4
 
-// values found in datasheet
-enum state_machine
-{
-    IDLE,
-    RX,
-    TX,
-    FSTXON,
-    CALIBRATE,
-    SETTLING,
-    RXFIFO_OVERFLOW,
-    TXFIFO_OVERFLOW
-};
+#define SCLK_PIN BIT3
 
-enum rw_config_registers
-{
-    IOCFG2,
-    IOCFG1,
-    IOCFG0,
-    FIFOTHR,
-    SYNC1,
-    SYNC0,
-    PKTLEN,
-    PKTCTRL1,
-    PKTCTRL0,
-    ADDR,
-    CHANNR,
-    FSCTRL1,
-    FSCTRL0,
-    FREQ2,
-    FREQ1,
-    FREQ0,
-    MDMCFG4,
-    MDMCFG3,
-    MDMCFG2,
-    MDMCFG1,
-    MDMCFG0,
-    DEVIATN,
-    MCSM2,
-    MCSM1,
-    MCSM0,
-    FOCCFG,
-    BSCFG,
-    AGCCTRL2,
-    AGCCTRL1,
-    AGCCTRL0,
-    WOREVT1,
-    WOREVT0,
-    WORCTRL,
-    FREND1,
-    FREND0,
-    FSCAL3,
-    FSCAL2,
-    FSCAL1,
-    FSCAL0,
-    RCCTRL1,
-    RCCTRL0,
-    FSTEST,
-    PTEST,
-    AGCTEST,
-    TEST2,
-    TEST1,
-    TEST0
-};
+#define GDO0_IN P1IN
+#define GDO0_PIN BIT0
 
-enum command_strobes
-{
-    SRES = 0x30,
-    SFSTXON,
-    SXOFF,
-    SCAL,
-    SRX,
-    STX,
-    SIDLE,
-    SWORD = 0x38,
-    SPWD,
-    SFRX,
-    SFTX,
-    SWORRST,
-    SNOP,
-    PATABLE,
-    TX_FIFO
-};
+#define GDO2_IN P1IN
+#define GDO2_PIN BIT7
 
-enum burst_command_strobes
-{
-    PARTNUM = 0x30,
-    VERSION,
-    FREQEST,
-    LQI,
-    RSSI,
-    MARCSTATE,
-    WORTIME1,
-    WORTIME0,
-    PKTSTATUS,
-    VCO_VC_DAC,
-    TXBYTES,
-    RXBYTES,
-    RCCTRL1_STATUS,
-    RCCTRL0_STATUS,
-    RX_FIFO = 0x3F
-};
+// register map
+#define IOCFG2      0x00  // GDO2 output pin configuration
+#define IOCFG1      0x01  // GDO1 output pin configuration
+#define IOCFG0      0x02  // GDO0 output pin configuration
+#define FIFOTHR     0x03  // RX FIFO and TX FIFO thresholds
+#define SYNC1       0x04  // Sync word, high byte
+#define SYNC0       0x05  // Sync word, low byte
+#define PKTLEN      0x06  // Packet length
+#define PKTCTRL1    0x07  // Packet automation control
+#define PKTCTRL0    0x08  // Packet automation control
+#define ADDR        0x09  // Device address
+#define CHANNR      0x0A  // Channel number
+#define FSCTRL1     0x0B  // Frequency synthesizer control
+#define FSCTRL0     0x0C  // Frequency synthesizer control
+#define FREQ2       0x0D  // Frequency control word, high byte
+#define FREQ1       0x0E  // Frequency control word, middle byte
+#define FREQ0       0x0F  // Frequency control word, low byte
+#define MDMCFG4     0x10  // Modem configuration
+#define MDMCFG3     0x11  // Modem configuration
+#define MDMCFG2     0x12  // Modem configuration
+#define MDMCFG1     0x13  // Modem configuration
+#define MDMCFG0     0x14  // Modem configuration
+#define DEVIATN     0x15  // Modem deviation setting
+#define MCSM2       0x16  // Main radio control state machine configuration
+#define MCSM1       0x17  // Main radio control state machine configuration
+#define MCSM0       0x18  // Main radio control state machine configuration
+#define FOCCFG      0x19  // Frequency offset compensation configuration
+#define BSCFG       0x1A  // Bit synchronization configuration
+#define AGCCTRL2    0x1B  // AGC control
+#define AGCCTRL1    0x1C  // AGC control
+#define AGCCTRL0    0x1D  // AGC control
+#define WOREVT1     0x1E  // WOR event timeout, high byte
+#define WOREVT0     0x1F  // WOR event timeout, low byte
+#define WORCTRL     0x20  // Wake on radio control
+#define FREND1      0x21  // Front end RX configuration
+#define FREND0      0x22  // Front end TX configuration
+#define FSCAL3      0x23  // Frequency synthesizer calibration
+#define FSCAL2      0x24  // Frequency synthesizer calibration
+#define FSCAL1      0x25  // Frequency synthesizer calibration
+#define FSCAL0      0x26  // Frequency synthesizer calibration
+#define RCCTRL1     0x27  // RC oscillator configuration
+#define RCCTRL0     0x28  // RC oscillator configuration
+#define FSTEST      0x29  // Frequency synthesizer calibration control
+#define PTEST       0x2A  // Production test
+#define AGCTEST     0x2B  // AGC test
+#define TEST2       0x2C  // Various test settings
+#define TEST1       0x2D  // Various test settings
+#define TEST0       0x2E  // Various test settings
+#define PATABLE     0x3E  // Burst access
 
+// fifo registers
+#define RXFIFO      0x3F
+#define TXFIFO      0x3F
 
-class radio_module
+// command cmdStrobes
+#define SRES        0x30  // Reset chip
+#define SCAL        0x33  // Calibrate synthesizer
+#define SRX         0x34  // Enable receive
+#define STX         0x35  // Enable transmit
+#define SIDLE       0x36  // Go idle
+#define SFRX        0x3A  // Flush RX FIFO
+#define SFTX        0x3B  // Flush TX FIFO
+#define SNOP        0x3D  // No operation
+
+// header byte masks
+#define WRITE_BIT           0x00
+#define NO_BURST            0x00
+#define WRITE_BURST         0x40
+#define READ_SINGLE         0x80
+#define READ_BURST          0xC0
+
+// packet length
+#define PACKET_LEN  2 // one for SpO2, another for heart-rate
+
+void initUART();
+void uart_write_byte(uint8_t c);
+void uart_write_string(const char *str);
+void uart_write_uint8(uint8_t val);
+
+class RF_module
 {
 public:
-    radio_module(uint8_t csn_pin);
-
-    void config_SPI();
-    void config_radio(); // using baud 115.2k for now w/ 2-FSK
-    void test_rf();
-    void wait_for_radio();
-    uint8_t read_single_byte(uint8_t address);
-    uint8_t write_single_byte(uint8_t address, uint8_t write);
-    void read_burst(uint8_t address);
-    void write_burst(uint8_t address, uint8_t *data, uint8_t length);
-    void write_string(uint8_t address, const char *string);
-    void transmit_packet(uint8_t *payload, uint8_t length);
-    void receive_packet(uint8_t *rx_buffer, uint8_t length);
-    uint8_t command_strobe(uint8_t address);
-    uint8_t read_status_register(uint8_t address);
-    uint8_t bitbang_test();
+    void begin();       // combination of spi init, and loading registers
+    void reset();       // reset strobes
+    void sendPacket(uint8_t spo2, uint8_t heartRate);
+    bool receivePacket(uint8_t &spo2, uint8_t &heartRate);
+    void setIdle();
+    uint8_t getStatus();
 
 private:
-    /* data */
-    uint8_t _csn_pin;
+    void spiInit();
+    void loadConfigRegisters();
+    uint8_t spiTransfer(uint8_t byte);
+    void csAssert();
+    void csDeassert();
+    void writeRegister(uint8_t address, uint8_t val);
+    uint8_t readRegister(uint8_t address);
+    void writeBurst(uint8_t address, uint8_t *data, uint8_t length);
+    void readBurst(uint8_t address, uint8_t *data, uint8_t length);
+    uint8_t cmdStrobe(uint8_t cmd);
+    void delayMicroseconds(uint16_t us);
 };
 
-/* RF_LIBRARY_H_ */
-#endif
+#endif // _RF_MODULE_LIBRARY_H_
