@@ -280,90 +280,92 @@ void uart_write_uint8(uint8_t val)
 //// HELPER FUNCTIONS USED FOR TESTING ////
     // also in sensor-library.cpp //
 
-// void initLEDs(){
-//     P3DIR |= (LED_1 | LED_2 | LED_3);
-//     P4DIR |= LED_4;
-//     P5DIR |= LED_5;
-//
-//     P3OUT &= ~(LED_1 | LED_2 | LED_3);
-//     P4OUT &= ~LED_4;
-//     P5OUT &= ~LED_5;
-// }
+/*
+void initLEDs(){
+    P3DIR |= (LED_1 | LED_2 | LED_3);
+    P4DIR |= LED_4;
+    P5DIR |= LED_5;
 
-// void delay_ms(uint16_t ms)
-// {
-//    // timer B0, 32kHz clock, count up, clock divider = 1
-//    TB0CTL = (TBSSEL__ACLK | MC__UP | ID__1 | TBCLR);
-//
-//    // set the count value, about 32 counts per ms
-//    TB0CCR0 = 33 * ms;
-//
-//    // clear the timer interrupt
-//    TB0CCTL0 &= ~CCIFG;
-//
-//    // enable clock interrupt
-//    TB0CCTL0 |= CCIE;
-//
-//    // enable low power mode & interrupts
-//    __bis_SR_register(LPM3_bits + GIE);
-//
-//    // disable timer after we wake
-//    TB0CTL = MC__STOP;
-// }
-//
-// #pragma vector = TIMER0_B0_VECTOR
-// __interrupt void Timer_B0_ISR(void)
-// {
-//    __bic_SR_register_on_exit(LPM3_bits); // wake CPU & exit low-power
-// }
-//
-// void TX_test_main(){
-//     // stop watchdog & gpio high-impedance
-//     PM5CTL0 &= ~LOCKLPM5;
-//     WDTCTL = WDTPW | WDTHOLD;
-//
-//     // toggle if we see uart commands
-//     bool do_uart = true;
-//     RF_module radio;
-//     uint8_t spo2 = 12, heartRate = 34, status, state;
-//
-//
-//     // starting both uart & radio
-//     initLEDs();
-//     if(do_uart) initUART();
-//     radio.begin();
-//     __bis_SR_register(GIE); // enable interrupts
-//     P3OUT |= LED_1;         // made it past init phase
-//
-//     delay_ms(1000);
-//
-//     // if(do_uart) uart_write_string("CC1101 Transmit is ready\r\n");
-//
-//     while(1){
-//         P3OUT &= ~(LED_2 | LED_3);
-//         P4OUT &= ~LED_4;
-//         P5OUT ^= LED_5; // blink LED to show transaction
-//         // if(do_uart) uart_write_string("Sending packet...\r\n");
-//         radio.sendPacket(spo2, heartRate); // should send 12 & 34
-//
-//         status = radio.getStatus();
-//         state = (status >> 4) & 0x07;   // 7th bit should always be 0, we don't care about other bytes
-//         if (state == 0x06 || state == 0x07) {
-//             P3OUT |= LED_3;
-//             // if(do_uart) uart_write_string("UNDERFLOW\r\n");
-//         }
-//         else{
-//             P4OUT |= LED_4;
-//             // if(do_uart){
-//             //     uart_write_string("status = ");
-//             //     uart_write_uint8(state);
-//             //     uart_write_string("\r\n");
-//             // }
-//         }
-//
-//         delay_ms(1000); // transmit once per seconds
-//     }
-// }
+    P3OUT &= ~(LED_1 | LED_2 | LED_3);
+    P4OUT &= ~LED_4;
+    P5OUT &= ~LED_5;
+}
+
+void delay_ms(uint16_t ms)
+{
+   // timer B0, 32kHz clock, count up, clock divider = 1
+   TB0CTL = (TBSSEL__ACLK | MC__UP | ID__1 | TBCLR);
+
+   // set the count value, about 32 counts per ms
+   TB0CCR0 = 33 * ms;
+
+   // clear the timer interrupt
+   TB0CCTL0 &= ~CCIFG;
+
+   // enable clock interrupt
+   TB0CCTL0 |= CCIE;
+
+   // enable low power mode & interrupts
+   __bis_SR_register(LPM3_bits + GIE);
+
+   // disable timer after we wake
+   TB0CTL = MC__STOP;
+}
+
+#pragma vector = TIMER0_B0_VECTOR
+__interrupt void Timer_B0_ISR(void)
+{
+   __bic_SR_register_on_exit(LPM3_bits); // wake CPU & exit low-power
+}
+
+void TX_test_main(){
+    // stop watchdog & gpio high-impedance
+    PM5CTL0 &= ~LOCKLPM5;
+    WDTCTL = WDTPW | WDTHOLD;
+
+    // toggle if we see uart commands
+    bool do_uart = true;
+    RF_module radio;
+    uint8_t spo2 = 12, heartRate = 34, status, state;
+
+
+    // starting both uart & radio
+    initLEDs();
+    if(do_uart) initUART();
+    radio.begin();
+    __bis_SR_register(GIE); // enable interrupts
+    P3OUT |= LED_1;         // made it past init phase
+
+    delay_ms(1000);
+
+    // if(do_uart) uart_write_string("CC1101 Transmit is ready\r\n");
+
+    while(1){
+        P3OUT &= ~(LED_2 | LED_3);
+        P4OUT &= ~LED_4;
+        P5OUT ^= LED_5; // blink LED to show transaction
+        // if(do_uart) uart_write_string("Sending packet...\r\n");
+        radio.sendPacket(spo2, heartRate); // should send 12 & 34
+
+        status = radio.getStatus();
+        state = (status >> 4) & 0x07;   // 7th bit should always be 0, we don't care about other bytes
+        if (state == 0x06 || state == 0x07) {
+            P3OUT |= LED_3;
+            // if(do_uart) uart_write_string("UNDERFLOW\r\n");
+        }
+        else{
+            P4OUT |= LED_4;
+            // if(do_uart){
+            //     uart_write_string("status = ");
+            //     uart_write_uint8(state);
+            //     uart_write_string("\r\n");
+            // }
+        }
+
+        delay_ms(1000); // transmit once per seconds
+    }
+}
+*/
 
 void RX_test_main(){
 
@@ -406,7 +408,9 @@ void RX_test_main(){
     }
 }
 
-//int main(){
-//    TX_test_main();
-//    RX_test_main();
-//}
+/*
+int main(){
+   TX_test_main();
+   RX_test_main();
+}
+*/
